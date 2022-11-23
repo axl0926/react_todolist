@@ -1,46 +1,64 @@
-
 import produce from "immer";
 import styles from "../styles/Home.module.css";
 import React, { useState } from "react";
 import { sub, add, format } from "date-fns";
+import create from "zustand";
 
+interface TaskStore {
+    tasks: { title: string; id: number; date: Date; isDone: boolean }[];
+    date: Date;
+    id: number;
+    addTask: (tasks: { title: string; id: number; date: Date; isDone: boolean }) => void;
+    increaseId: () => void;
+    removeTask: (id: number) => void;
+    checkTask: (id: number) => void;
+    addDate: () => void;
+    subDate: () => void;
+}
+
+const today = new Date(new Date().setHours(0, 0, 0, 0));
+const useTaskStore = create<TaskStore>((set) => ({
+    tasks: [
+        {
+            title: "클릭하면 체크",
+            id: 0,
+            date: today,
+            isDone: false,
+        },
+        {
+            title: "누르면 삭제>>",
+            id: 1,
+            date: today,
+            isDone: false,
+        },
+    ],
+    id: 2,
+    date: today,
+    addTask: (task) => set((state) => ({ tasks: [...state.tasks, task], id: state.id + 1 })),
+    increaseId: () => set((state) => ({ id: state.id + 1 })),
+    removeTask: (id) => set((state) => ({ tasks: state.tasks.filter((v) => v.id != id) })),
+    checkTask: (id) => set((state) => ({ tasks: state.tasks.map((v) => (v.id === id ? { ...v, isDone: !v.isDone } : v)) })),
+    addDate: () => set((state) => ({ date: add(state.date, { days: 1 }) })),
+    subDate: () => set((state) => ({ date: sub(state.date, { days: 1 }) })),
+}));
 type List = { title: string; id: number; date: Date; checked: boolean };
 
 function Home() {
-    const [list, setList] = useState<List[]>([
-        { title: "탕수육먹기", id: 0, date: new Date("2022-08-23"), checked: false },
-        { title: "탕수육뱉기", id: 1, date: new Date("2022-08-23"), checked: false },
-        { title: "치킨먹기", id: 2, date: new Date("2022-08-25"), checked: false },
-        { title: "피자먹기", id: 3, date: new Date("2022-08-24"), checked: false },
-        { title: "치킨뱉기", id: 4, date: new Date("2022-08-24"), checked: false },
-        { title: "피자뱉기", id: 5, date: new Date("2022-08-24"), checked: false },
-        { title: "리액트먹기", id: 6, date: new Date("2022-08-23"), checked: false },
-        { title: "삼겹살먹기", id: 7, date: new Date("2022-08-23"), checked: false },
-        { title: "치킨먹기", id: 8, date: new Date("2022-08-25"), checked: false },
-        { title: "리액트뱉기", id: 9, date: new Date("2022-08-23"), checked: false },
-        { title: "삼겹살뱉기", id: 10, date: new Date("2022-08-23"), checked: false },
-        { title: "치킨먹기", id: 11, date: new Date("2022-08-25"), checked: false },
-    ]);
-    const [date, setDate] = useState(new Date());
+    const tasks = useTaskStore((state) => state.tasks);
+    const date = useTaskStore((state) => state.date);
+    const addTasks = useTaskStore((state) => state.addTask);
+    const addDate = useTaskStore((state) => state.addDate);
+    const subDate = useTaskStore((state) => state.subDate);
+    const removeTask = useTaskStore((state) => state.removeTask);
+    const checkTask = useTaskStore((state) => state.checkTask);
+   
     const [currentValue, setCurrentValue] = useState<{ title: string; date: Date }>({ title: "", date: date });
     const [currentId, setCurrentId] = useState<number>(12);
     const day = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+    
 
     const getTodayTask = () => {
-        return list.filter((item) => format(item.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"));
-    };
-    const removeTask = (id: number) => {
-        setList(list.filter((v) => v.id != id));
-    };
-    const addTask = (data: List) => {
-        setList(
-            produce(list, (draft) => {
-                draft.push(data);
-            })
-        );
-    };
-    const checkTask = (id: number) => {
-        setList(list.map((v) => (v.id === id ? { ...v, checked: !v.checked } : v)));
+        return tasks.filter((item) => format(item.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"));
     };
 
     return (
@@ -51,13 +69,13 @@ function Home() {
                     <div className={styles.btns}>
                         <button
                             onClick={() => {
-                                setDate(add(date, { days: 1 }));
+                                addDate();
                             }}>
                             ▲
                         </button>
                         <button
                             onClick={() => {
-                                setDate(sub(date, { days: 1 }));
+                                subDate();
                             }}>
                             ▼
                         </button>
@@ -73,7 +91,7 @@ function Home() {
                         <div className={styles.listWrap} key={item.id}>
                             <li
                                 className={styles.listNode}
-                                data-checked={item.checked}
+                                data-checked={item.isDone}
                                 onClick={() => {
                                     checkTask(item.id);
                                 }}>
@@ -106,7 +124,7 @@ function Home() {
                 <input
                     className={styles.inputDate}
                     type="date"
-                    value={format(date, "yyyy-MM-dd")}
+                    // value={}
                     onChange={(e) => {
                         setCurrentValue(
                             produce(currentValue, (draft) => {
@@ -116,9 +134,10 @@ function Home() {
                         console.log(e.target.value);
                     }}
                 />
+
                 <button
                     onClick={() => {
-                        addTask({ ...currentValue, id: currentId, checked: false });
+                        addTasks({ ...currentValue, id: currentId, isDone: false });
                         setCurrentId(currentId + 1);
                     }}>
                     추가

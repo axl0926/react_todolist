@@ -52,6 +52,7 @@
     padding: 0;
 }
 .date {
+    width:210px;
     font-size: 25px;
     font-weight: 800;
     color: rgb(77, 77, 77);
@@ -119,7 +120,7 @@
     }
     100% {
         margin-left: 0px;
-        opacity: 1;
+        opacity: 1; 
     }
 }
 .listNode > button {
